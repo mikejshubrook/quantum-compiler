@@ -1,8 +1,6 @@
 import numpy as np
 from qiskit.quantum_info import Operator
 
-import numpy as np
-
 def UJ_fidelity(state_a, state_b):
     """Computes the Uhlmann-Jozsa fidelity between two quantum states.
 
