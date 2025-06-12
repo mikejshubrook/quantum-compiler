@@ -33,79 +33,29 @@ def make_circuit(angles, basis_count, circuit, m, n):
         QuantumCircuit: The modified circuit with the applied gates.
     """
 
-    # Apply gates in reverse order: from highest basis count down to 0
-    # At each stage, apply Euler angles (if non-zero) followed by RXX gate if applicable
+    def apply_single_qubit_rotations(level):
+        # apply single-qubit rotations based on the angles at the current level of decomposition
 
-    if basis_count >= 3:
-        # Single-qubit Euler rotations for both qubits
-        if angles['q0']['theta'][3] != 0.0:
-            circuit.rx(angles['q0']['theta'][3], m)
-        if angles['q0']['phi'][3] != 0.0:
-            circuit.ry(angles['q0']['phi'][3], m)
-        if angles['q0']['xi'][3] != 0.0:
-            circuit.rx(angles['q0']['xi'][3], m)
+        for q, qubit in zip(['q0', 'q1'], [m, n]):
+            theta = angles[q]['theta'][level]
+            phi = angles[q]['phi'][level]
+            xi = angles[q]['xi'][level]
 
-        if angles['q1']['theta'][3] != 0.0:
-            circuit.rx(angles['q1']['theta'][3], n)
-        if angles['q1']['phi'][3] != 0.0:
-            circuit.ry(angles['q1']['phi'][3], n)
-        if angles['q1']['xi'][3] != 0.0:
-            circuit.rx(angles['q1']['xi'][3], n)
+            if theta != 0.0:
+                circuit.rx(theta, qubit)
+            if phi != 0.0:
+                circuit.ry(phi, qubit)
+            if xi != 0.0:
+                circuit.rx(xi, qubit)
 
-        # Two-qubit entangling gate
-        circuit.rxx(np.pi / 2, m, n)
+    max_level = min(basis_count, 3)
+    for level in reversed(range(max_level + 1)):
+        apply_single_qubit_rotations(level)
+        if level >= 1:
+            circuit.rxx(np.pi / 2, m, n)
 
-    if basis_count >= 2:
-        if angles['q0']['theta'][2] != 0.0:
-            circuit.rx(angles['q0']['theta'][2], m)
-        if angles['q0']['phi'][2] != 0.0:
-            circuit.ry(angles['q0']['phi'][2], m)
-        if angles['q0']['xi'][2] != 0.0:
-            circuit.rx(angles['q0']['xi'][2], m)
-
-        if angles['q1']['theta'][2] != 0.0:
-            circuit.rx(angles['q1']['theta'][2], n)
-        if angles['q1']['phi'][2] != 0.0:
-            circuit.ry(angles['q1']['phi'][2], n)
-        if angles['q1']['xi'][2] != 0.0:
-            circuit.rx(angles['q1']['xi'][2], n)
-
-        circuit.rxx(np.pi / 2, m, n)
-
-    if basis_count >= 1:
-        if angles['q0']['theta'][1] != 0.0:
-            circuit.rx(angles['q0']['theta'][1], m)
-        if angles['q0']['phi'][1] != 0.0:
-            circuit.ry(angles['q0']['phi'][1], m)
-        if angles['q0']['xi'][1] != 0.0:
-            circuit.rx(angles['q0']['xi'][1], m)
-
-        if angles['q1']['theta'][1] != 0.0:
-            circuit.rx(angles['q1']['theta'][1], n)
-        if angles['q1']['phi'][1] != 0.0:
-            circuit.ry(angles['q1']['phi'][1], n)
-        if angles['q1']['xi'][1] != 0.0:
-            circuit.rx(angles['q1']['xi'][1], n)
-
-        circuit.rxx(np.pi / 2, m, n)
-
-    if basis_count >= 0:
-        if angles['q0']['theta'][0] != 0.0:
-            circuit.rx(angles['q0']['theta'][0], m)
-        if angles['q0']['phi'][0] != 0.0:
-            circuit.ry(angles['q0']['phi'][0], m)
-        if angles['q0']['xi'][0] != 0.0:
-            circuit.rx(angles['q0']['xi'][0], m)
-
-        if angles['q1']['theta'][0] != 0.0:
-            circuit.rx(angles['q1']['theta'][0], n)
-        if angles['q1']['phi'][0] != 0.0:
-            circuit.ry(angles['q1']['phi'][0], n)
-        if angles['q1']['xi'][0] != 0.0:
-            circuit.rx(angles['q1']['xi'][0], n)
-
-    # return the modified circuit
     return circuit
+
 
 def process_circuit_angles(target, basis_gate, euler_basis, num_basis_gates):
     """
