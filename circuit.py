@@ -232,118 +232,6 @@ def process_circuit_angles(target, basis_gate, euler_basis, num_basis_gates):
 
     return dict(angles)
 
-def circuit_fidelity(n_qb, qc_exact, qc_noisy, noise_model=None):
-    """
-    Compare the fidelity between an ideal quantum circuit and its noisy/decomposed counterpart.
-
-    This function simulates both the ideal quantum circuit and a noisy or decomposed version of it, 
-    measures all qubits in both circuits, and computes the fidelity between the resulting output 
-    states (in terms of density matrices). It returns the fidelity along with the measurement 
-    counts from both circuits, which can be used for further analysis or visualization.
-
-    Args:
-        n_qb (int): Number of qubits in the circuits.
-        qc_exact (QuantumCircuit): The ideal quantum circuit to compare against.
-        qc_noisy (QuantumCircuit): The noisy or decomposed version of the circuit.
-        noise_model (NoiseModel, optional): A Qiskit noise model to simulate physical imperfections. 
-            If None, the noisy circuit is simulated ideally but using the native gate set.
-
-    Returns:
-        tuple:
-            - float: The fidelity between the two circuits' output states.
-            - dict: Measurement counts from the ideal circuit.
-            - dict: Measurement counts from the noisy/decomposed circuit.
-    """
-    
-    # Add measurement operations to all qubits in both circuits
-    for n in range(n_qb):
-        qc_exact.measure(n, n)
-        qc_noisy.measure(n, n)
-
-    # Simulate the ideal circuit without noise
-    simulator = AerSimulator()
-    compiled_circuit_exact = transpile(qc_exact, simulator)
-    result_exact = simulator.run(compiled_circuit_exact).result()
-    counts_exact = result_exact.get_counts()
-
-    # Simulate the noisy or decomposed circuit
-    simulator_noisy = AerSimulator(noise_model=noise_model)
-    compiled_circuit_decomp = transpile(qc_noisy, simulator_noisy)
-    result_decomp = simulator_noisy.run(compiled_circuit_decomp).result()
-    counts_decomp = result_decomp.get_counts()
-
-    # Convert results into density matrices for fidelity computation
-    rho = create_density_matrix(n_qb, result_exact)   # Ideal circuit state
-    sigma = create_density_matrix(n_qb, result_decomp)  # Noisy circuit state
-
-    # Compute fidelity between ideal and noisy density matrices
-    fid = UJ_fidelity(rho.data, sigma.data).real
-
-    return fid, counts_exact, counts_decomp
-
-def optimal_basis_gate_number(target, basis_gate, euler_basis, noise_model=None):
-    """
-    Determine the optimal number of basis gates to use in decomposing a 2-qubit unitary gate 
-    by comparing fidelities of noisy simulations.
-
-    This function evaluates the fidelity of decomposed circuits using 0 to 3 basis gate 
-    applications. It identifies which number of basis gate uses yields the highest fidelity 
-    in the presence of a given noise model and returns the corresponding Euler angles for that decomposition.
-
-    Args:
-        target (np.ndarray): A 4x4 unitary matrix representing the target 2-qubit gate.
-        basis_gate (Gate): The native 2-qubit basis gate to decompose into (e.g., CX, RXX).
-        euler_basis (list[str]): Basis of single-qubit Euler rotations (e.g., ['rx', 'ry', 'rx']).
-        noise_model (NoiseModel, optional): A Qiskit noise model representing the physical hardware.
-
-    Returns:
-        tuple:
-            - int: The optimal number of basis gates to use (0, 1, 2, or 3).
-            - dict: A dictionary of Euler angles (theta, phi, xi) for each qubit for the optimal decomposition.
-    """
-    
-    n_qb = 2  # Fixed to 2-qubit unitaries
-
-    # Create ideal and decomposed quantum circuits
-    qc_exact = QuantumCircuit(n_qb, n_qb)
-    qc_decomp0 = QuantumCircuit(n_qb, n_qb)
-    qc_decomp1 = QuantumCircuit(n_qb, n_qb)
-    qc_decomp2 = QuantumCircuit(n_qb, n_qb)
-    qc_decomp3 = QuantumCircuit(n_qb, n_qb)
-
-    # Apply the target unitary to the exact circuit
-    qc_exact.unitary(target, [0, 1], label='target_unitary')
-
-    # Try decompositions using 0 to 3 applications of the basis gate
-    # and compute the fidelity for each
-    fidelities = []
-    angles_list = []
-
-    for num_basis_gates, qc_decomp in enumerate([qc_decomp0, qc_decomp1, qc_decomp2, qc_decomp3]):
-        # Extract Euler angles using the specified number of basis gates
-        angles = process_circuit_angles(target, basis_gate, euler_basis, num_basis_gates)
-        angles_list.append(angles)
-
-        # Build the decomposed circuit
-        make_circuit(angles, num_basis_gates, qc_decomp, 0, 1)
-
-        # Evaluate fidelity between exact and noisy/decomposed circuit
-        fidelity, _, _ = circuit_fidelity(n_qb, qc_exact.copy(), qc_decomp, noise_model=noise_model)
-        fidelities.append(fidelity)
-
-    # Determine which decomposition yielded the highest fidelity
-    max_fid = max(fidelities)
-    best_n = fidelities.index(max_fid)
-    best_angles = angles_list[best_n]
-
-    return best_n, best_angles
-
-from qiskit.circuit.library import SwapGate
-
-
-from qiskit import QuantumCircuit
-from qiskit.quantum_info import Operator
-from qiskit.circuit.library import SwapGate
 
 def optimal_basis_gate_number(target, basis_gate, euler_basis, noise_model=None):
     """
@@ -369,10 +257,7 @@ def optimal_basis_gate_number(target, basis_gate, euler_basis, noise_model=None)
     best_fidelity = -1.0  # Stores the highest fidelity achieved.
     best_n = None  # Stores the number of basis gates for the best decomposition.
     best_angles = None  # Stores the angles for the basis gates in the best decomposition.
-    used_swap = False  # Flag to indicate if a SWAP gate was used in the best decomposition.
 
-        # Compose the target unitary with a SWAP gate if 'use_swap' is True.
-        # This checks if pre-swapping the qubits leads to a better decomposition.
     unitary = target 
 
     # Create an 'exact' quantum circuit representing the ideal target unitary
