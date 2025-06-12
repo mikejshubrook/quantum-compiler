@@ -1,9 +1,12 @@
 import numpy as np
+import random
+
 from qiskit.synthesis import TwoQubitBasisDecomposer
 from qiskit_aer import AerSimulator
 from qiskit import QuantumCircuit, transpile
 from collections import defaultdict
 from fidelity_measures import *
+from qiskit.quantum_info import random_unitary
 
 
 def make_circuit(angles, basis_count, circuit, m, n):
@@ -288,3 +291,66 @@ def optimal_basis_gate_number(target, basis_gate, euler_basis, noise_model=None)
 
     # Return the parameters of the best decomposition found across all trials.
     return best_n, best_angles
+
+
+def compile(target, basis_gate, euler_basis, circuit, n, m, noise_model=None):
+     # find the optimal decomposition for the target unitary, in terms of basis gates and SWAP         
+    optimal_basis_count, optimal_angles = optimal_basis_gate_number(target, basis_gate, euler_basis, noise_model)
+    circuit = make_circuit(optimal_angles, optimal_basis_count, circuit, n, m)
+    return circuit
+
+def run_compiler(number_of_qubits, circuit_depth, basis_gate, euler_basis, total_noise_model=None):
+
+    #create ideal quantum circuit (no decomposition, no noise)
+    qc_exact = QuantumCircuit(number_of_qubits,number_of_qubits)
+
+    #create decomposed quantum circuit (decomposition and no noise)
+    qc_decomposed = QuantumCircuit(number_of_qubits,number_of_qubits)
+
+    #create noisy quantum circuit (decomposition and noise)
+    qc_noisy = QuantumCircuit(number_of_qubits,number_of_qubits)
+
+    # list of qubit labels
+    qb_label = np.arange(0, number_of_qubits).tolist() 
+
+    #loop through depth of circuit
+    for d in range(circuit_depth):
+        print(f'--- Run {d+1} of {circuit_depth} ---')
+        # shuffle the qubit labels to pair them randomly
+        #create random list of ints from 1 to n to use in pairing qubits randomly
+        random.shuffle(qb_label)
+        print(f'Shuffling qubits...')
+
+        for m in np.arange(0,number_of_qubits): 
+            # loop through all qubits in exact (noisy) circuit and add an identity (rz(0)) for shuttling
+            # this assumes that there is shuttling inbetween each layer of depth to get qubits next to each other in order to perform two qubit gates
+            qc_exact.id(m) # shuttle each qubit in the ideal circuit
+            qc_decomposed.rz(0, m) # shuttle each qubit in the decomposed circuit
+            qc_noisy.rz(0, m) # shuttle each qubit in the noisy circuit
+    
+        for n in np.arange(0,number_of_qubits,2):
+
+            # if there are an odd number of qubits, add an identity to the last one then...
+            # this will add some decoherence to this qubit (in the noisy circuit) while it is not being used
+            if len(qb_label) % 2 == 1 and n == number_of_qubits-1:
+                print(f'Identity applied to Qubit {qb_label[n]}\n')
+                qc_exact.id(qb_label[n])
+                qc_decomposed.id(qb_label[n])
+                qc_noisy.id(qb_label[n])
+
+            # pair qubits together and create a random two-qubit gates between them
+            else:
+                
+                #for each (random) pair of qubits create a random two qubit gate
+                target_unitary = Operator(random_unitary(4))
+
+                # add the target unitary to the ideal circuit
+                qc_exact.unitary(target_unitary, [qb_label[n], qb_label[n+1]], label=f'U{qb_label[n], qb_label[n+1]}')
+                print(f'Two qubit gate between qubits {qb_label[n]} and {qb_label[n+1]} ')
+
+                # TODO here we want to be able to test the decomposed circuit both with and without noise
+                qc_decomposed = compile(target_unitary, basis_gate, euler_basis, qc_decomposed, qb_label[n], qb_label[n+1], noise_model=None)
+                qc_noisy = compile(target_unitary, basis_gate, euler_basis, qc_noisy, qb_label[n], qb_label[n+1], noise_model=total_noise_model)
+    return qc_exact, qc_decomposed, qc_noisy
+
+
