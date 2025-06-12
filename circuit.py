@@ -3,7 +3,7 @@ from qiskit.synthesis import TwoQubitBasisDecomposer
 from qiskit_aer import AerSimulator
 from qiskit import QuantumCircuit, transpile
 from collections import defaultdict
-from useful_functions import UJ_fidelity, create_density_matrix
+from fidelity_measures import *
 
 
 def make_circuit(angles, basis_count, circuit, m, n):
