@@ -288,7 +288,7 @@ def optimal_basis_gate_number(target, basis_gate, euler_basis, noise_model=None)
             best_fidelity = fidelity
             best_n = num_basis_gates
             best_angles = angles
-
+    print(f'Best fidelity: {best_fidelity} with {best_n} basis gates')
     # Return the parameters of the best decomposition found across all trials.
     return best_n, best_angles
 
