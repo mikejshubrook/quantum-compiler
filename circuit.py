@@ -345,7 +345,7 @@ from qiskit import QuantumCircuit
 from qiskit.quantum_info import Operator
 from qiskit.circuit.library import SwapGate
 
-def optimal_basis_gate_number_with_swap(target, basis_gate, euler_basis, noise_model=None):
+def optimal_basis_gate_number(target, basis_gate, euler_basis, noise_model=None):
     """
     Determines the optimal number of applications of a given basis gate to decompose a target 2-qubit unitary,
     with and without precomposing it with a SWAP gate. Returns the configuration that yields the highest fidelity.
@@ -364,8 +364,6 @@ def optimal_basis_gate_number_with_swap(target, basis_gate, euler_basis, noise_m
     # Define the number of qubits for the unitary operations.
     n_qb = 2  # Fixed to 2-qubit unitaries.
 
-    # Create an Operator object representing a SWAP gate.
-    swap_op = Operator(SwapGate())
 
     # Initialize variables to track the best decomposition found.
     best_fidelity = -1.0  # Stores the highest fidelity achieved.
@@ -373,39 +371,35 @@ def optimal_basis_gate_number_with_swap(target, basis_gate, euler_basis, noise_m
     best_angles = None  # Stores the angles for the basis gates in the best decomposition.
     used_swap = False  # Flag to indicate if a SWAP gate was used in the best decomposition.
 
-    # Iterate through two scenarios: attempting decomposition with and without a SWAP gate
-    # applied before the target unitary.
-    for use_swap in [False, True]:
         # Compose the target unitary with a SWAP gate if 'use_swap' is True.
         # This checks if pre-swapping the qubits leads to a better decomposition.
-        unitary = target @ swap_op if use_swap else target
+    unitary = target 
 
-        # Create an 'exact' quantum circuit representing the ideal target unitary
-        # (potentially after a SWAP). This serves as the reference for fidelity calculation.
-        qc_exact = QuantumCircuit(n_qb, n_qb)
-        qc_exact.unitary(unitary, [0, 1], label='Target Unitary')
+    # Create an 'exact' quantum circuit representing the ideal target unitary
+    # (potentially after a SWAP). This serves as the reference for fidelity calculation.
+    qc_exact = QuantumCircuit(n_qb, n_qb)
+    qc_exact.unitary(unitary, [0, 1], label='Target Unitary')
 
-        # Attempt decompositions using 0 to 3 applications of the basis gate.
-        for num_basis_gates in range(4):
-            # Create a quantum circuit for the decomposed unitary.
-            qc_decomp = QuantumCircuit(n_qb, n_qb)
+    # Attempt decompositions using 0 to 3 applications of the basis gate.
+    for num_basis_gates in range(4):
+        # Create a quantum circuit for the decomposed unitary.
+        qc_decomp = QuantumCircuit(n_qb, n_qb)
 
-            # Calculate the specific angles for the basis gates to approximate the target unitary.
-            angles = process_circuit_angles(unitary, basis_gate, euler_basis, num_basis_gates)
+        # Calculate the specific angles for the basis gates to approximate the target unitary.
+        angles = process_circuit_angles(unitary, basis_gate, euler_basis, num_basis_gates)
 
-            # Construct the decomposed circuit using the calculated angles and basis gates.
-            make_circuit(angles, num_basis_gates, qc_decomp, 0, 1)
+        # Construct the decomposed circuit using the calculated angles and basis gates.
+        make_circuit(angles, num_basis_gates, qc_decomp, 0, 1)
 
-            # Calculate the fidelity between the exact target circuit and the decomposed circuit including noise
-            fidelity, _, _ = circuit_fidelity(n_qb, qc_exact.copy(), qc_decomp, noise_model=noise_model)
+        # Calculate the fidelity between the exact target circuit and the decomposed circuit including noise
+        fidelity, _, _ = circuit_fidelity(n_qb, qc_exact.copy(), qc_decomp, noise_model=noise_model)
 
-            # Check if the current decomposition yields a higher fidelity than the best found so far.
-            if fidelity > best_fidelity:
-                # Update the best results if a higher fidelity is achieved.
-                best_fidelity = fidelity
-                best_n = num_basis_gates
-                best_angles = angles
-                used_swap = use_swap
+        # Check if the current decomposition yields a higher fidelity than the best found so far.
+        if fidelity > best_fidelity:
+            # Update the best results if a higher fidelity is achieved.
+            best_fidelity = fidelity
+            best_n = num_basis_gates
+            best_angles = angles
 
     # Return the parameters of the best decomposition found across all trials.
-    return best_n, best_angles, used_swap
+    return best_n, best_angles
