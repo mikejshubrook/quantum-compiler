@@ -37,15 +37,18 @@ def make_circuit(angles, basis_count, circuit, m, n):
         # apply single-qubit rotations based on the angles at the current level of decomposition
 
         for q, qubit in zip(['q0', 'q1'], [m, n]):
+
+            # extract angles 
             theta = angles[q]['theta'][level]
             phi = angles[q]['phi'][level]
             xi = angles[q]['xi'][level]
 
-            if theta != 0.0:
+            # apply rotations (providing the angle is non-zero, which avoids adding unnecessary gates and therefore nosie)
+            if theta > 0 or theta < 0:
                 circuit.rx(theta, qubit)
-            if phi != 0.0:
+            if phi > 0 or phi < 0:
                 circuit.ry(phi, qubit)
-            if xi != 0.0:
+            if xi > 0 or xi < 0:
                 circuit.rx(xi, qubit)
 
     max_level = min(basis_count, 3)
