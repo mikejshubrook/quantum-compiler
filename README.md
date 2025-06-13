@@ -12,6 +12,9 @@ For a walkthrough of the underlying theory and a demo of an older version of thi
 The file trapped_ion_noise.py includes a noise model specifically for trapped-ion systems.
 For other architectures, we recommend creating separate noise model files (e.g. superconducting_noise.py) and updating the compiler accordingly.
 
+# Tests
+The notebook tests.ipynb contains two tests which should be run whenever the code has been changed. These will ensure that the compilation process is working properly. 
+
 # Development Notes
 This is an ongoing project, and parts of the codebase may include:
 - TODO comments for future improvements
