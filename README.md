@@ -1,13 +1,22 @@
-# quantum-compiler
-Quantum compilation algorithm to decompose arbitrary two qubit gates into the native gate set of different quantum computing architectures.
+# Quantum Compiler
 
-A video demonstration of the old version of the code (previous Qiskit version), as well as an explanation of the quantum compiler theory behind it, can be found in this video on my YouTube channel: https://www.youtube.com/watch?v=NSC6NrH7Y-g&t=753s&ab_channel=MikeShubrook
+This project implements a quantum compilation algorithm that decomposes arbitrary two-qubit gates into the native gate sets of different quantum computing architectures.
 
-To run the code, use the jupyter notebook titled 'quantum-compiler.ipynb'
+# Project Overview
+The current implementation is tailored for a trapped-ion quantum computer, using the Molmer–Sørensen (MS) gate as the two-qubit entangling gate and an XYX Euler basis for single-qubit rotations. If you're using a different architecture (e.g. superconducting qubits), you’ll need to adjust both the gate set and the decomposition strategy accordingly.
 
-This code has been programmed to work for a trapped-ion quantum computer, and therefore depends on the two-qubit basis gate being the Molmer-Sorensen gate, and the Euler basising being XYX. This should be changed if the compiler is to be used for a different architecture.
-There are also hardware-specific noise parameters hard coded in. These should be changed for different architectures. 
+# Demo & Theory Explanation
+For a walkthrough of the underlying theory and a demo of an older version of this project, check out this video on my YouTube channel: https://www.youtube.com/watch?v=NSC6NrH7Y-g
 
-This is an ongoing project that I plan to keep working on, so there may be some parts of the code that have TODOs or comments giving ideas on what needs to be done next.
+# Architecture-Specific Notes
+The file trapped_ion_noise.py includes a noise model specifically for trapped-ion systems.
+For other architectures, we recommend creating separate noise model files (e.g. superconducting_noise.py) and updating the compiler accordingly.
+
+# Development Notes
+This is an ongoing project, and parts of the codebase may include:
+- TODO comments for future improvements
+- Ideas and notes for extended features
+- Work-in-progress features
+
 
 
